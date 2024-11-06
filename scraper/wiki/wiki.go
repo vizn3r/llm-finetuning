@@ -30,6 +30,10 @@ var (
 	inputLinks    []string
 	outFormat     OutputFormat_t
 
+	bodySelector     string
+	contentSelector  string
+	excludeSelectors []string
+
 	crawledLinks sync.Map
 	semaphore    chan struct{}
 )
@@ -146,10 +150,17 @@ func Crawl(url string, wg *sync.WaitGroup) {
 	sectionHeading := pageTitle
 	prevHeading := sectionHeading
 	var section string
-	rawContent := body.Find(".page__main").Find("div.mw-parser-output").Children()
+
+	// for fandom wiki
+	rawContent := body.Find(bodySelector).Find(contentSelector).Children()
 	rawContent.Each(func(i int, s *goquery.Selection) {
-		if s.Nodes[0].Type == html.CommentNode || goquery.NodeName(s) == "aside" || goquery.NodeName(s) == "div" || goquery.NodeName(s) == "figure" || goquery.NodeName(s) == "blockquote" {
+		if s.Nodes[0].Type == html.CommentNode {
 			return
+		}
+		for _, selector := range excludeSelectors {
+			if goquery.NodeName(s) == selector {
+				return
+			}
 		}
 		if goquery.NodeName(s) == "h1" || goquery.NodeName(s) == "h2" || goquery.NodeName(s) == "h3" || goquery.NodeName(s) == "h4" || goquery.NodeName(s) == "h5" {
 			sectionHeading = strings.ReplaceAll(strings.TrimSpace(s.Text()), "[]", "")
@@ -298,6 +309,10 @@ func WikiScrape(args []string) {
 	p_keepTempFiles := pflag.Bool("keep_temp", false, "Keep temporary directory")
 	p_outFormat := pflag.Int("out_format", 0, "Output file format [0 - .json | 1 - .jsonl]")
 
+	p_bodySelector := pflag.String("body_selector", ".page__main", "Body selector")
+	p_contentSelector := pflag.String("content_selector", "div.mw-parser-output", "Content selector")
+	p_excludeSelectors := pflag.StringArray("exclude_selectors", []string{"aside", "div", "figure", "blockquote"}, "List of selectors to ignore")
+
 	pflag.CommandLine.Parse(args)
 
 	inputLinks = *p_inputLinks
@@ -305,6 +320,10 @@ func WikiScrape(args []string) {
 	outDir = *p_outDir
 	keepTempFiles = *p_keepTempFiles
 	outFormat = OutputFormat_t(*p_outFormat)
+
+	bodySelector = *p_bodySelector
+	contentSelector = *p_contentSelector
+	excludeSelectors = *p_excludeSelectors
 
 	if len(inputLinks) == 0 {
 		fmt.Println("No links provided, use '--links' or '--help'")
