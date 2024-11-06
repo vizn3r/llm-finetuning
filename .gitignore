@@ -1,5 +1,4 @@
 *.venv
-*vac
 *out
 *temp
 *.ipynb*
