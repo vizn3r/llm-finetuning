@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,14 +23,6 @@ var (
 	crawledLinks sync.Map
 	semaphore    chan struct{}
 )
-
-func Prompt(q string) string {
-	fmt.Println(q)
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	ans := scanner.Text()
-	return ans
-}
 
 func SnakeCase(str string) string {
 	return strings.ReplaceAll(strings.ToLower(strings.TrimSpace(str)), " ", "_")
@@ -246,6 +237,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Make dirs
 	err := os.MkdirAll(tempDir, 0755)
 	if err != nil {
 		panic(err)
@@ -255,17 +247,14 @@ func main() {
 		panic(err)
 	}
 
-	files, err := os.ReadDir(tempDir)
-	if err != nil {
-		panic(err)
-	}
-
+	// Clean before use
 	CleanDir(tempDir)
 
 	fmt.Println("Output directory:", outDir)
 	fmt.Println("Dataset name:", datasetName)
 	fmt.Println("Scaping wiki")
 
+	// Start crawling
 	for _, link := range inputLinks {
 		if _, crawled := crawledLinks.LoadOrStore(link, true); !crawled && strings.HasPrefix(link, "http") {
 			fmt.Println("URL:", link)
@@ -275,13 +264,6 @@ func main() {
 	}
 	wg.Wait()
 
-	for _, file := range files {
-		path := filepath.Join(tempDir, file.Name())
-		err := os.RemoveAll(path)
-		if err != nil {
-			fmt.Println("Couldn't remove", path)
-		}
-	}
-
+	// Delete temorary files after running
 	CleanDir(tempDir)
 }
