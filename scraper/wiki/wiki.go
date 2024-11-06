@@ -1,4 +1,4 @@
-package main
+package wiki
 
 import (
 	"encoding/json"
@@ -288,7 +288,7 @@ func CombineJSONLFiles() error {
 	return nil
 }
 
-func main() {
+func WikiScrape(args []string) {
 	wg := new(sync.WaitGroup)
 	semaphore = make(chan struct{}, 50)
 
@@ -298,7 +298,7 @@ func main() {
 	p_keepTempFiles := pflag.Bool("keep_temp", false, "Keep temporary directory")
 	p_outFormat := pflag.Int("out_format", 0, "Output file format [0 - .json | 1 - .jsonl]")
 
-	pflag.Parse()
+	pflag.CommandLine.Parse(args)
 
 	inputLinks = *p_inputLinks
 	tempDir = *p_tempDir
